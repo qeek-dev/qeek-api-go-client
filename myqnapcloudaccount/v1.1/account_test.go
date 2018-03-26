@@ -7,7 +7,7 @@ import (
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 
-	"github.com/cage1016/qeek-api-go-client/test"
+	"github.com/qeek-dev/qeek-api-go-client/test"
 )
 
 const (
