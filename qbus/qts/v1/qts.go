@@ -115,6 +115,10 @@ func exec(out pointer, cmd ...interface{}) error {
 	return nil
 }
 
+func (l *Service) GetSid() string {
+	return l.sid
+}
+
 // Nas Me call
 type NasMeCall struct {
 	s        *Service
