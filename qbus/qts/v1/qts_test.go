@@ -347,15 +347,15 @@ func TestNasMeCall_Do(t *testing.T) {
 	tt := []struct {
 		name string
 
-		wantNasMe qts.NasMeResult
+		wantNasMe qts.NasUserResult
 		wantErr   string
 
 		setupSubTest test.SetupSubTest
 	}{
 		{
 			name: "get nas me success",
-			wantNasMe: qts.NasMeResult{
-				"admin",
+			wantNasMe: qts.NasUserResult{
+				"garychen@qnap.com",1, []string{}, "auto", "admin", "/share/CACHEDEV1_DATA/.qpkg/DJ2-Live-X/middleware/qeek/../../tmp/share/user/nas/admin/avatar/portrait.jpg",
 			},
 			setupSubTest: func(t *testing.T) func(t *testing.T) {
 				mockCount := 0
@@ -365,6 +365,8 @@ func TestNasMeCall_Do(t *testing.T) {
 						out = []byte(s.validSidResponse)
 					case 1:
 						out = []byte(`{"code":200,"errorCode":0,"errorMsg":"","result":{"user":"admin"}}`)
+					case 2:
+						out = []byte(`{"code":200,"errorCode":0,"errorMsg":"","result":{"avatar":"/share/CACHEDEV1_DATA/.qpkg/DJ2-Live-X/middleware/qeek/../../tmp/share/user/nas/admin/avatar/portrait.jpg","email":"garychen@qnap.com","enable":1,"group":[],"lang":"auto","name":"admin"}}`)
 					}
 					mockCount++
 					return

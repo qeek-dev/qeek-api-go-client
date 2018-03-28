@@ -8,4 +8,4 @@
     - [x] VerifySid
     - [x] User
     - [x] Users
-    - [x] Avatar            
+    - [x] Me

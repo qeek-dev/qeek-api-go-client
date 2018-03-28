@@ -125,19 +125,20 @@ func (l *Service) Me() *NasMeCall {
 	return &NasMeCall{l, ""}
 }
 
-func (l *NasMeCall) Do() (r NasMeResult, err error) {
+func (l *NasMeCall) Do() (r NasUserResult, err error) {
 	var a NasMeResponse
 	err = exec(&a, "get", fmt.Sprintf("%s/qts/user/me", l.s.qbusNameSpace), fmt.Sprint(`{"sid":"%s"}`, l.s.sid))
 	if err != nil {
 		err = errors.Wrap(err, "Get Nas User Me fail")
-	} else {
-		if a.Code != 200 {
-			err = logError(errors.Wrap(errors.New(fmt.Sprintf("[%d] %s", a.ErrorCode, a.ErrorMsg)), "Get Nas User Me fail"))
-		} else {
-			r = a.Result
-		}
+	} else if a.Code != 200 {
+		err = logError(errors.Wrap(errors.New(fmt.Sprintf("[%d] %s", a.ErrorCode, a.ErrorMsg)), "Get Nas User Me fail"))
 	}
-	return
+
+	if err != nil {
+		return
+	}
+
+	return l.s.User().UserName(a.Result.User).Do()
 }
 
 // Nas user call
