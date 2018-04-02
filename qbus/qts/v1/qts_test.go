@@ -23,7 +23,7 @@ func setupSidTestCase(t *testing.T) (QtsTestCaseSuite, func(t *testing.T)) {
 	s.validSidResponse = `{"code":200,"errorCode":0,"errorMsg":"","result":null}`
 	s.inValidSidResponse = `{"code":400,"errorCode":4000201,"errorMsg":"NAS sid is not valid","result":null}`
 
-	s.qts = qts.NewClient("com.qnap.dj2")
+	s.qts = qts.NewClient("com.qnap.dj2", true)
 
 	return s, func(t *testing.T) {
 
@@ -355,7 +355,7 @@ func TestNasMeCall_Do(t *testing.T) {
 		{
 			name: "get nas me success",
 			wantNasMe: qts.NasUserResult{
-				"garychen@qnap.com",1, []string{}, "auto", "admin", "/share/CACHEDEV1_DATA/.qpkg/DJ2-Live-X/middleware/qeek/../../tmp/share/user/nas/admin/avatar/portrait.jpg",
+				"garychen@qnap.com", 1, []string{}, "auto", "admin", "/share/CACHEDEV1_DATA/.qpkg/DJ2-Live-X/middleware/qeek/../../tmp/share/user/nas/admin/avatar/portrait.jpg",
 			},
 			setupSubTest: func(t *testing.T) func(t *testing.T) {
 				mockCount := 0

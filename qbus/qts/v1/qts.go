@@ -88,6 +88,7 @@ type NasUserAvatarResult struct {
 }
 
 type Service struct {
+	s             *sh.Session
 	sid           string
 	qbusNameSpace string
 }
@@ -97,12 +98,11 @@ func logError(err error) error {
 	return err
 }
 
-func exec(out pointer, cmd ...interface{}) error {
+func (s *Service) exec(out pointer, cmd ...interface{}) error {
 	if !isPointer(out) {
 		return errors.New(fmt.Sprintf("Value '%s' is not a pointer", out))
 	}
-
-	o, err := sh.Command("qbus", cmd...).Output()
+	o, err := s.s.Command("qbus", cmd...).Output()
 	if err != nil {
 		return logError(errors.Wrap(err, "qbus command exec fail"))
 	}
@@ -131,7 +131,7 @@ func (l *Service) Me() *NasMeCall {
 
 func (l *NasMeCall) Do() (r NasUserResult, err error) {
 	var a NasMeResponse
-	err = exec(&a, "get", fmt.Sprintf("%s/qts/user/me", l.s.qbusNameSpace), fmt.Sprint(`{"sid":"%s"}`, l.s.sid))
+	err = l.s.exec(&a, "get", fmt.Sprintf("%s/qts/user/me", l.s.qbusNameSpace), fmt.Sprintf(`{"sid":"%s"}`, l.s.sid))
 	if err != nil {
 		err = errors.Wrap(err, "Get Nas User Me fail")
 	} else if a.Code != 200 {
@@ -162,7 +162,7 @@ func (l *NasUserCall) UserName(username string) *NasUserCall {
 
 func (l *NasUserCall) Do() (r NasUserResult, err error) {
 	var a NasUserResponse
-	err = exec(&a, "get", fmt.Sprintf("%s/qts/user/%s", l.s.qbusNameSpace, l.username), fmt.Sprint(`{"sid":"%s"}`, l.s.sid))
+	err = l.s.exec(&a, "get", fmt.Sprintf("%s/qts/user/%s", l.s.qbusNameSpace, l.username), fmt.Sprintf(`{"sid":"%s"}`, l.s.sid))
 	if err != nil {
 		err = errors.Wrap(err, "Get Nas User fail")
 	} else {
@@ -186,7 +186,7 @@ func (l *Service) Users() *NasUsersCall {
 
 func (l *NasUsersCall) Do() (r []NasUserResult, err error) {
 	var a NasUsersResponse
-	err = exec(&a, "get", fmt.Sprintf("%s/qts/users", l.s.qbusNameSpace), fmt.Sprint(`{"sid":"%s"}`, l.s.sid))
+	err = l.s.exec(&a, "get", fmt.Sprintf("%s/qts/users", l.s.qbusNameSpace), fmt.Sprintf(`{"sid":"%s"}`, l.s.sid))
 	if err != nil {
 		err = errors.Wrap(err, "Get Nas Users fail")
 	} else {
@@ -215,7 +215,7 @@ func (l *VerifySidCall) Sid(sid string) *VerifySidCall {
 
 func (l *VerifySidCall) Do() (err error) {
 	var out VerifySidResponse
-	err = exec(&out, "get", fmt.Sprintf("%s/qts/verify_sid", l.s.qbusNameSpace), fmt.Sprint(`{"sid":"%s"}`, l.s.sid))
+	err = l.s.exec(&out, "get", fmt.Sprintf("%s/qts/verify_sid", l.s.qbusNameSpace), fmt.Sprintf(`{"sid":"%s"}`, l.s.sid))
 	if err != nil || out.Code != 200 {
 		if err != nil {
 			err = logError(errors.Wrap(err, "Verify Sid fail"))
@@ -251,7 +251,7 @@ func (l *LoginCall) Password(password string) *LoginCall {
 
 func (l *LoginCall) Do() (err error) {
 	var out NasLoginResponse
-	err = exec(&out, "get", fmt.Sprintf("%s/qts/account_login", l.s.qbusNameSpace), fmt.Sprint(`{"user":"%s","pwd":"%s"}`, l.username, l.password))
+	err = l.s.exec(&out, "get", fmt.Sprintf("%s/qts/account_login", l.s.qbusNameSpace), fmt.Sprintf(`{"user":"%s","pwd":"%s"}`, l.username, l.password))
 	if err == nil && out.Code == 200 {
 		l.s.sid = out.Result.AuthSid
 	} else {
@@ -264,6 +264,10 @@ func (l *LoginCall) Do() (err error) {
 	return
 }
 
-func NewClient(qbusNameSpace string) *Service {
-	return &Service{qbusNameSpace, ""}
+func NewClient(qbusNameSpace string, debugMode bool) *Service {
+	s := &Service{}
+	s.qbusNameSpace = qbusNameSpace
+	s.s = sh.NewSession()
+	s.s.ShowCMD = debugMode
+	return s
 }
