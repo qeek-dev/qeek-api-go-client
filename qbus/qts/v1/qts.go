@@ -10,6 +10,21 @@ import (
 	"github.com/pkg/errors"
 )
 
+type QtsErr struct {
+	Code     QtsErrCode
+	QbusCode int
+	QbusErr  string
+	Err      error
+}
+
+func (q *QtsErr) Error() string {
+	if q.QbusErr != "" {
+		return fmt.Sprintf("%d: %s, Qbus[%d]: %s", q.Code, q.Err.Error(), q.QbusCode, q.QbusErr)
+	} else {
+		return fmt.Sprintf("%d: %s", q.Code, q.Err.Error())
+	}
+}
+
 // any is purely semantic
 type any interface{}
 
@@ -130,19 +145,19 @@ func (l *Service) Me() *NasMeCall {
 }
 
 func (l *NasMeCall) Do() (r NasUserResult, err error) {
-	var a NasMeResponse
-	err = l.s.exec(&a, "get", fmt.Sprintf("%s/qts/user/me", l.s.qbusNameSpace), fmt.Sprintf(`{"sid":"%s"}`, l.s.sid))
+	var out NasMeResponse
+	err = l.s.exec(&out, "get", fmt.Sprintf("%s/qts/user/me", l.s.qbusNameSpace), fmt.Sprintf(`{"sid":"%s"}`, l.s.sid))
 	if err != nil {
-		err = errors.Wrap(err, "Get Nas User Me fail")
-	} else if a.Code != 200 {
-		err = logError(errors.Wrap(errors.New(fmt.Sprintf("[%d] %s", a.ErrorCode, a.ErrorMsg)), "Get Nas User Me fail"))
+		err = logError(&QtsErr{Code: QtsErrorInternalError, Err: err})
+	} else if out.Code != 200 {
+		err = logError(&QtsErr{Code: QtsErrorBadRequest, Err: err, QbusCode: out.ErrorCode, QbusErr: out.ErrorMsg})
 	}
 
 	if err != nil {
 		return
 	}
 
-	return l.s.User().UserName(a.Result.User).Do()
+	return l.s.User().UserName(out.Result.User).Do()
 }
 
 // Nas user call
@@ -161,15 +176,15 @@ func (l *NasUserCall) UserName(username string) *NasUserCall {
 }
 
 func (l *NasUserCall) Do() (r NasUserResult, err error) {
-	var a NasUserResponse
-	err = l.s.exec(&a, "get", fmt.Sprintf("%s/qts/user/%s", l.s.qbusNameSpace, l.username), fmt.Sprintf(`{"sid":"%s"}`, l.s.sid))
+	var out NasUserResponse
+	err = l.s.exec(&out, "get", fmt.Sprintf("%s/qts/user/%s", l.s.qbusNameSpace, l.username), fmt.Sprintf(`{"sid":"%s"}`, l.s.sid))
 	if err != nil {
-		err = errors.Wrap(err, "Get Nas User fail")
+		err = logError(&QtsErr{Code: QtsErrorInternalError, Err: err})
 	} else {
-		if a.Code != 200 {
-			err = logError(errors.Wrap(errors.New(fmt.Sprintf("[%d] %s", a.ErrorCode, a.ErrorMsg)), "Get Nas User fail"))
+		if out.Code != 200 {
+			err = logError(&QtsErr{Code: QtsErrorBadRequest, Err: err, QbusCode: out.ErrorCode, QbusErr: out.ErrorMsg})
 		} else {
-			r = a.Result
+			r = out.Result
 		}
 	}
 	return
@@ -185,15 +200,15 @@ func (l *Service) Users() *NasUsersCall {
 }
 
 func (l *NasUsersCall) Do() (r []NasUserResult, err error) {
-	var a NasUsersResponse
-	err = l.s.exec(&a, "get", fmt.Sprintf("%s/qts/users", l.s.qbusNameSpace), fmt.Sprintf(`{"sid":"%s"}`, l.s.sid))
+	var out NasUsersResponse
+	err = l.s.exec(&out, "get", fmt.Sprintf("%s/qts/users", l.s.qbusNameSpace), fmt.Sprintf(`{"sid":"%s"}`, l.s.sid))
 	if err != nil {
-		err = errors.Wrap(err, "Get Nas Users fail")
+		err = logError(&QtsErr{Code: QtsErrorInternalError, Err: err})
 	} else {
-		if a.Code != 200 {
-			err = logError(errors.Wrap(errors.New(fmt.Sprintf("[%d] %s", a.ErrorCode, a.ErrorMsg)), "Get Nas Users fail"))
+		if out.Code != 200 {
+			err = logError(&QtsErr{Code: QtsErrorBadRequest, Err: err, QbusCode: out.ErrorCode, QbusErr: out.ErrorMsg})
 		} else {
-			r = a.Result
+			r = out.Result
 		}
 	}
 	return
@@ -218,9 +233,9 @@ func (l *VerifySidCall) Do() (err error) {
 	err = l.s.exec(&out, "get", fmt.Sprintf("%s/qts/verify_sid", l.s.qbusNameSpace), fmt.Sprintf(`{"sid":"%s"}`, l.s.sid))
 	if err != nil || out.Code != 200 {
 		if err != nil {
-			err = logError(errors.Wrap(err, "Verify Sid fail"))
+			err = logError(&QtsErr{Code: QtsErrorInternalError, Err: err})
 		} else {
-			err = logError(errors.Wrap(errors.New(fmt.Sprintf("[%d] %s", out.ErrorCode, out.ErrorMsg)), "Verify Sid fail"))
+			err = logError(&QtsErr{Code: QtsErrorBadRequest, Err: err, QbusCode: out.ErrorCode, QbusErr: out.ErrorMsg})
 		}
 		// clear sid
 		l.s.sid = ""
@@ -256,9 +271,9 @@ func (l *LoginCall) Do() (err error) {
 		l.s.sid = out.Result.AuthSid
 	} else {
 		if err != nil {
-			err = logError(errors.Wrap(err, "Nas login fail"))
+			err = logError(&QtsErr{Code: QtsErrorInternalError, Err: err})
 		} else {
-			err = logError(errors.Wrap(errors.New(fmt.Sprintf("[%d] %s", out.ErrorCode, out.ErrorMsg)), "Nas login fail"))
+			err = logError(&QtsErr{Code: QtsErrorBadRequest, Err: err, QbusCode: out.ErrorCode, QbusErr: out.ErrorMsg})
 		}
 	}
 	return

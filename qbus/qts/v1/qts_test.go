@@ -40,7 +40,8 @@ func TestLoginCall_Do(t *testing.T) {
 		givenUserName      string
 		givenPassword      string
 
-		wantErr string
+		//wantErr string
+		wantErrCode qts.QtsErrCode
 
 		setupSubTest test.SetupSubTest
 	}{
@@ -61,7 +62,7 @@ func TestLoginCall_Do(t *testing.T) {
 			name:          "fail with invalid password",
 			givenUserName: "admin",
 			givenPassword: "dddd",
-			wantErr:       "Nas login fail: [4000203] Authentication failed",
+			wantErrCode:   qts.QtsErrorBadRequest,
 			setupSubTest: func(t *testing.T) func(t *testing.T) {
 				monkey.PatchInstanceMethod(reflect.TypeOf((*sh.Session)(nil)), "Output", func(_ *sh.Session) (out []byte, err error) {
 					return []byte(`{"code": 400,"errorCode": 4000203,"errorMsg": "Authentication failed","result": null}`), nil
@@ -76,7 +77,7 @@ func TestLoginCall_Do(t *testing.T) {
 			givenQbusNameSpace: "com.qnap.dj2",
 			givenUserName:      "admin",
 			givenPassword:      "zxcv",
-			wantErr:            "Nas login fail: qbus command exec fail: exec: \"qbus\": executable file not found in $PATH",
+			wantErrCode:        qts.QtsErrorInternalError,
 			setupSubTest:       test.EmptySubTest(),
 		},
 	}
@@ -88,7 +89,11 @@ func TestLoginCall_Do(t *testing.T) {
 
 			err := s.qts.Login().UserName(tc.givenUserName).Password(tc.givenPassword).Do()
 			if err != nil {
-				assert.EqualError(t, err, tc.wantErr, "An error was expected")
+				if c, ok := err.(*qts.QtsErr); ok {
+					assert.Equal(t, c.Code, tc.wantErrCode, "An error was expected")
+				} else {
+					t.Fatalf("%v, unexpected error", err)
+				}
 			}
 		})
 	}
@@ -102,7 +107,7 @@ func TestVerifySidCall_Do(t *testing.T) {
 		name     string
 		givenSid string
 
-		wantErr string
+		wantErrCode qts.QtsErrCode
 
 		setupSubTest test.SetupSubTest
 	}{
@@ -119,9 +124,9 @@ func TestVerifySidCall_Do(t *testing.T) {
 			},
 		},
 		{
-			name:     "fail with invalid sid",
-			givenSid: "oh0n736f",
-			wantErr:  "Verify Sid fail: [4000201] NAS sid is not valid",
+			name:        "fail with invalid sid",
+			givenSid:    "oh0n736f",
+			wantErrCode: qts.QtsErrorBadRequest,
 			setupSubTest: func(t *testing.T) func(t *testing.T) {
 				monkey.PatchInstanceMethod(reflect.TypeOf((*sh.Session)(nil)), "Output", func(ss *sh.Session) (out []byte, err error) {
 					return []byte(s.inValidSidResponse), nil
@@ -132,9 +137,9 @@ func TestVerifySidCall_Do(t *testing.T) {
 			},
 		},
 		{
-			name:     "fail with empty sid",
-			givenSid: "",
-			wantErr:  "Verify Sid fail: [4000200] 'sid' is not specified or not found.",
+			name:        "fail with empty sid",
+			givenSid:    "",
+			wantErrCode: qts.QtsErrorBadRequest,
 			setupSubTest: func(t *testing.T) func(t *testing.T) {
 				monkey.PatchInstanceMethod(reflect.TypeOf((*sh.Session)(nil)), "Output", func(ss *sh.Session) (out []byte, err error) {
 					return []byte(`{"code": 400,"errorCode": 4000200,"errorMsg": "'sid' is not specified or not found.","result": null}`), nil
@@ -147,7 +152,7 @@ func TestVerifySidCall_Do(t *testing.T) {
 		{
 			name:         "fail with qbus not found",
 			givenSid:     "oh0n736f",
-			wantErr:      `Verify Sid fail: qbus command exec fail: exec: "qbus": executable file not found in $PATH`,
+			wantErrCode:  qts.QtsErrorInternalError,
 			setupSubTest: test.EmptySubTest(),
 		},
 	}
@@ -159,7 +164,11 @@ func TestVerifySidCall_Do(t *testing.T) {
 
 			err := s.qts.Verify().Sid(tc.givenSid).Do()
 			if err != nil {
-				assert.EqualError(t, err, tc.wantErr, "An error was expected")
+				if c, ok := err.(*qts.QtsErr); ok {
+					assert.Equal(t, c.Code, tc.wantErrCode, "An error was expected")
+				} else {
+					t.Fatalf("%v, unexpected error", err)
+				}
 			}
 		})
 	}
@@ -173,7 +182,7 @@ func TestNasUsersCall_Do(t *testing.T) {
 		name string
 
 		wantNasAccount []qts.NasUserResult
-		wantErr        string
+		wantErrCode    qts.QtsErrCode
 
 		setupSubTest test.SetupSubTest
 	}{
@@ -205,8 +214,8 @@ func TestNasUsersCall_Do(t *testing.T) {
 			},
 		},
 		{
-			name:    "fail with invalid sid",
-			wantErr: "Verify Sid fail: [4000201] NAS sid is not valid",
+			name:        "fail with invalid sid",
+			wantErrCode: qts.QtsErrorBadRequest,
 			setupSubTest: func(t *testing.T) func(t *testing.T) {
 				mockCount := 0
 				monkey.PatchInstanceMethod(reflect.TypeOf((*sh.Session)(nil)), "Output", func(ss *sh.Session) (out []byte, err error) {
@@ -229,7 +238,7 @@ func TestNasUsersCall_Do(t *testing.T) {
 		},
 		{
 			name:         "fail with qbus not found",
-			wantErr:      `Get Nas Users fail: qbus command exec fail: exec: "qbus": executable file not found in $PATH`,
+			wantErrCode:  qts.QtsErrorInternalError,
 			setupSubTest: test.EmptySubTest(),
 		},
 	}
@@ -241,7 +250,11 @@ func TestNasUsersCall_Do(t *testing.T) {
 
 			na, err := s.qts.Users().Do()
 			if err != nil {
-				assert.EqualError(t, err, tc.wantErr, "An error was expected")
+				if c, ok := err.(*qts.QtsErr); ok {
+					assert.Equal(t, c.Code, tc.wantErrCode, "An error was expected")
+				} else {
+					t.Fatalf("%v, unexpected error", err)
+				}
 			} else {
 				for _, a := range tc.wantNasAccount {
 					assert.Contains(t, na, a)
@@ -261,7 +274,7 @@ func TestNasUserCall_Do(t *testing.T) {
 		givenUsername string
 
 		wantNasAccount qts.NasUserResult
-		wantErr        string
+		wantErrCode    qts.QtsErrCode
 
 		setupSubTest test.SetupSubTest
 	}{
@@ -296,7 +309,7 @@ func TestNasUserCall_Do(t *testing.T) {
 			name:          "fail with no match route for the path",
 			givenValidSid: "oh0n736f",
 			givenUsername: "ddd",
-			wantErr:       `Get Nas User fail: [4000202] User dfdf not exist`,
+			wantErrCode:   qts.QtsErrorBadRequest,
 			setupSubTest: func(t *testing.T) func(t *testing.T) {
 				mockCount := 0
 				monkey.PatchInstanceMethod(reflect.TypeOf((*sh.Session)(nil)), "Output", func(ss *sh.Session) (out []byte, err error) {
@@ -320,7 +333,7 @@ func TestNasUserCall_Do(t *testing.T) {
 		{
 			name:          "fail with qbus not found",
 			givenValidSid: "oh0n736f",
-			wantErr:       `Get Nas User fail: qbus command exec fail: exec: "qbus": executable file not found in $PATH`,
+			wantErrCode:   qts.QtsErrorInternalError,
 			setupSubTest:  test.EmptySubTest(),
 		},
 	}
@@ -332,7 +345,11 @@ func TestNasUserCall_Do(t *testing.T) {
 
 			na, err := s.qts.User().UserName(tc.givenUsername).Do()
 			if err != nil {
-				assert.EqualError(t, err, tc.wantErr, "An error was expected")
+				if c, ok := err.(*qts.QtsErr); ok {
+					assert.Equal(t, c.Code, tc.wantErrCode, "An error was expected")
+				} else {
+					t.Fatalf("%v, unexpected error", err)
+				}
 			} else {
 				assert.EqualValues(t, na, tc.wantNasAccount)
 			}
@@ -347,8 +364,8 @@ func TestNasMeCall_Do(t *testing.T) {
 	tt := []struct {
 		name string
 
-		wantNasMe qts.NasUserResult
-		wantErr   string
+		wantNasMe   qts.NasUserResult
+		wantErrCode qts.QtsErrCode
 
 		setupSubTest test.SetupSubTest
 	}{
@@ -380,8 +397,8 @@ func TestNasMeCall_Do(t *testing.T) {
 			},
 		},
 		{
-			name:    "get nas me fail with invalid sid",
-			wantErr: "Get Nas User Me fail: [4000201] NAS sid is not valid",
+			name:        "get nas me fail with invalid sid",
+			wantErrCode: qts.QtsErrorBadRequest,
 			setupSubTest: func(t *testing.T) func(t *testing.T) {
 				mockCount := 0
 				monkey.PatchInstanceMethod(reflect.TypeOf((*sh.Session)(nil)), "Output", func(ss *sh.Session) (out []byte, err error) {
@@ -404,7 +421,7 @@ func TestNasMeCall_Do(t *testing.T) {
 		},
 		{
 			name:         "fail with qbus not found",
-			wantErr:      `Get Nas User Me fail: qbus command exec fail: exec: "qbus": executable file not found in $PATH`,
+			wantErrCode:  qts.QtsErrorInternalError,
 			setupSubTest: test.EmptySubTest(),
 		},
 	}
@@ -416,7 +433,11 @@ func TestNasMeCall_Do(t *testing.T) {
 
 			na, err := s.qts.Me().Do()
 			if err != nil {
-				assert.EqualError(t, err, tc.wantErr, "An error was expected")
+				if c, ok := err.(*qts.QtsErr); ok {
+					assert.Equal(t, c.Code, tc.wantErrCode, "An error was expected")
+				} else {
+					t.Fatalf("%v, unexpected error", err)
+				}
 			} else {
 				assert.EqualValues(t, na, tc.wantNasMe)
 			}
