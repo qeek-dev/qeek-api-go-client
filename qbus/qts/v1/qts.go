@@ -18,8 +18,8 @@ type QtsErr struct {
 }
 
 func (q *QtsErr) Error() string {
-	if q.QbusErr != "" {
-		return fmt.Sprintf("%d: %s, Qbus[%d]: %s", q.Code, q.Err.Error(), q.QbusCode, q.QbusErr)
+	if q.Err == nil {
+		return fmt.Sprintf("%d: Qbus[%d]: %s", q.Code, q.QbusCode, q.QbusErr)
 	} else {
 		return fmt.Sprintf("%d: %s", q.Code, q.Err.Error())
 	}
@@ -150,7 +150,7 @@ func (l *NasMeCall) Do() (r NasUserResult, err error) {
 	if err != nil {
 		err = logError(&QtsErr{Code: QtsErrorInternalError, Err: err})
 	} else if out.Code != 200 {
-		err = logError(&QtsErr{Code: QtsErrorBadRequest, Err: err, QbusCode: out.ErrorCode, QbusErr: out.ErrorMsg})
+		err = logError(&QtsErr{Code: QtsErrorBadRequest, QbusCode: out.ErrorCode, QbusErr: out.ErrorMsg})
 	}
 
 	if err != nil {
@@ -182,7 +182,7 @@ func (l *NasUserCall) Do() (r NasUserResult, err error) {
 		err = logError(&QtsErr{Code: QtsErrorInternalError, Err: err})
 	} else {
 		if out.Code != 200 {
-			err = logError(&QtsErr{Code: QtsErrorBadRequest, Err: err, QbusCode: out.ErrorCode, QbusErr: out.ErrorMsg})
+			err = logError(&QtsErr{Code: QtsErrorBadRequest, QbusCode: out.ErrorCode, QbusErr: out.ErrorMsg})
 		} else {
 			r = out.Result
 		}
@@ -206,7 +206,7 @@ func (l *NasUsersCall) Do() (r []NasUserResult, err error) {
 		err = logError(&QtsErr{Code: QtsErrorInternalError, Err: err})
 	} else {
 		if out.Code != 200 {
-			err = logError(&QtsErr{Code: QtsErrorBadRequest, Err: err, QbusCode: out.ErrorCode, QbusErr: out.ErrorMsg})
+			err = logError(&QtsErr{Code: QtsErrorBadRequest, QbusCode: out.ErrorCode, QbusErr: out.ErrorMsg})
 		} else {
 			r = out.Result
 		}
@@ -235,7 +235,7 @@ func (l *VerifySidCall) Do() (err error) {
 		if err != nil {
 			err = logError(&QtsErr{Code: QtsErrorInternalError, Err: err})
 		} else {
-			err = logError(&QtsErr{Code: QtsErrorBadRequest, Err: err, QbusCode: out.ErrorCode, QbusErr: out.ErrorMsg})
+			err = logError(&QtsErr{Code: QtsErrorBadRequest, QbusCode: out.ErrorCode, QbusErr: out.ErrorMsg})
 		}
 		// clear sid
 		l.s.sid = ""
@@ -273,7 +273,7 @@ func (l *LoginCall) Do() (err error) {
 		if err != nil {
 			err = logError(&QtsErr{Code: QtsErrorInternalError, Err: err})
 		} else {
-			err = logError(&QtsErr{Code: QtsErrorBadRequest, Err: err, QbusCode: out.ErrorCode, QbusErr: out.ErrorMsg})
+			err = logError(&QtsErr{Code: QtsErrorBadRequest, QbusCode: out.ErrorCode, QbusErr: out.ErrorMsg})
 		}
 	}
 	return
