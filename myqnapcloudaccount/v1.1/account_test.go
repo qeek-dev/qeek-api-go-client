@@ -1,4 +1,4 @@
-package account
+package account_test
 
 import (
 	"testing"
@@ -7,6 +7,7 @@ import (
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 
+	account "github.com/qeek-dev/qeek-api-go-client/myqnapcloudaccount/v1.1"
 	"github.com/qeek-dev/qeek-api-go-client/test"
 )
 
@@ -19,7 +20,7 @@ const (
 
 type AccountTestCaseSuite struct {
 	env     *test.Env
-	service *Service
+	service *account.Service
 }
 
 func setupAccountTestCase(t *testing.T) (AccountTestCaseSuite, func(t *testing.T)) {
@@ -48,7 +49,7 @@ func TestMeGetCall_Do(t *testing.T) {
 				ctx := context.Background()
 				ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: AccessToken})
 				tc := oauth2.NewClient(ctx, ts)
-				s.service = New(tc)
+				s.service = account.New(tc)
 
 				return func(t *testing.T) {
 				}

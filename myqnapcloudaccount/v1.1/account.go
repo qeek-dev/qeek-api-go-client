@@ -164,6 +164,16 @@ type GetUserResponse struct {
 		MobileNumber string `json:"mobile_number"`
 		UserId       string `json:"user_id"`
 		Email        string `json:"email"`
+		Avatars      struct {
+			Small  string `json:"small"`
+			Medium string `json:"medium"`
+			Cn     struct {
+				Small  string `json:"small"`
+				Medium string `json:"medium"`
+				Icon   string `json:"icon"`
+			} `json:"cn"`
+			Icon string `json:"icon"`
+		} `json:"avatars"`
 	} `json:"result"`
 }
 
