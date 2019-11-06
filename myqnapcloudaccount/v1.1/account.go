@@ -10,6 +10,12 @@ import (
 	"strings"
 )
 
+// default production env, if use go build will replace apiVersion and basePath
+var (
+	apiVersion = "v1.1"
+	basePath   = "https://core.api.myqnapcloud.com"
+)
+
 func New(client *http.Client) *Service {
 	if client == nil {
 		client = http.DefaultClient

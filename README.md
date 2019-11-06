@@ -1,5 +1,11 @@
 # qeek-dev-api-go-client
 
+build env
+- alpha
+- production
+
+APIs
+
 - myqnapcloudaccount v1.1
     - [x] me
     
